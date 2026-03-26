@@ -238,6 +238,31 @@ fcli versions list yz9QHggkjM5NtzZYjzj4fY
 fcli versions list --url "https://www.figma.com/design/yz9QHggkjM5NtzZYjzj4fY/My-Design" --json
 ```
 
+### `fcli install skill`
+
+Install the fcli AI skill for Claude Code and Cursor. The skill teaches AI agents how to use fcli to interact with Figma designs — inspecting files, exporting assets, listing components/styles, managing comments, and implementing designs from Figma URLs.
+
+```bash
+# Install globally (~/.claude/skills and ~/.cursor/skills)
+fcli install skill
+
+# Install to current project only (.claude/skills and .cursor/skills)
+fcli install skill --scope project
+```
+
+**Global install** writes the skill files to `~/.claude/skills/figma/` and `~/.cursor/skills/figma/`, making them available across all projects.
+
+**Project install** writes to `.claude/skills/figma/` and `.cursor/skills/figma/` in the current directory. This is useful for team projects where the skill should be version-controlled.
+
+For Claude Code, the installer also updates `settings.json` to allow `fcli` commands and skill file reads.
+
+Once installed, use the skill in:
+
+- **Claude Code:** `/figma https://www.figma.com/design/KEY/Name?node-id=1-2`
+- **Cursor:** reference the skill when prompting, or add it to your agent settings
+
+The skill acts as a single entry point for any Figma-related task — the AI agent reads the skill instructions and reference docs to determine which `fcli` commands to run.
+
 ## JSON output
 
 All list/info commands support `--json` for machine-readable output. This is useful for piping into `jq`, scripting, or integration with other tools:

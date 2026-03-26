@@ -2,6 +2,7 @@ mod auth;
 mod comments;
 mod components;
 mod file;
+mod install;
 mod projects;
 mod styles;
 mod user;
@@ -61,6 +62,11 @@ pub enum Commands {
         #[command(subcommand)]
         command: versions::VersionsCommands,
     },
+    /// Install tools and integrations
+    Install {
+        #[command(subcommand)]
+        command: install::InstallCommands,
+    },
 }
 
 pub(crate) fn get_client() -> Result<FigmaClient, Box<dyn std::error::Error>> {
@@ -98,5 +104,6 @@ pub async fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
         Commands::Components { command } => components::run(command).await,
         Commands::Styles { command } => styles::run(command).await,
         Commands::Versions { command } => versions::run(command).await,
+        Commands::Install { command } => install::run(command).await,
     }
 }
