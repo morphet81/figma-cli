@@ -64,13 +64,28 @@ pub enum Commands {
 }
 
 pub(crate) fn get_client() -> Result<FigmaClient, Box<dyn std::error::Error>> {
-    let tokens = load_tokens().ok_or("Not authenticated. Run `fcli auth login` first.")?;
+    if let Ok(token) = std::env::var("FIGMA_ACCESS_TOKEN") {
+        return Ok(FigmaClient::new(token, false));
+    }
+    let tokens = load_tokens().ok_or("Not authenticated. Set FIGMA_ACCESS_TOKEN or run `fcli auth login`.")?;
     let is_oauth = tokens.token_type == TokenType::Oauth;
     Ok(FigmaClient::new(tokens.access_token, is_oauth))
 }
 
+pub(crate) fn require_file_arg(file: &Option<String>, url: &Option<String>) -> Result<String, Box<dyn std::error::Error>> {
+    match (file, url) {
+        (_, Some(u)) => Ok(u.clone()),
+        (Some(f), None) => Ok(f.clone()),
+        (None, None) => Err("Provide a file key or --url <figma-url>. Figma URLs must be passed via --url or quoted to prevent shell interpretation of ? and &.".into()),
+    }
+}
+
 pub(crate) fn resolve_file_key(input: &str) -> Result<String, Box<dyn std::error::Error>> {
     Ok(crate::utils::parse_figma_url(input)?.file_key)
+}
+
+pub(crate) fn resolve_file(input: &str) -> Result<crate::utils::ParsedFigmaUrl, Box<dyn std::error::Error>> {
+    crate::utils::parse_figma_url(input).map_err(|e| e.into())
 }
 
 pub async fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {

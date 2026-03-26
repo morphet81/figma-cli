@@ -9,12 +9,14 @@ use crate::utils::format_table;
 pub enum ComponentsCommands {
     /// List components
     List {
-        /// File key/URL or team ID (with --team)
-        source: String,
+        /// File key, team ID, or quoted Figma URL
+        source: Option<String>,
+        /// Figma URL (avoids shell quoting issues)
+        #[arg(long)]
+        url: Option<String>,
         /// Treat source as a team ID
         #[arg(long)]
         team: bool,
-        /// Output as JSON
         #[arg(long)]
         json: bool,
     },
@@ -22,7 +24,10 @@ pub enum ComponentsCommands {
 
 pub async fn run(cmd: ComponentsCommands) -> Result<(), Box<dyn std::error::Error>> {
     match cmd {
-        ComponentsCommands::List { source, team, json } => list(&source, team, json).await,
+        ComponentsCommands::List { source, url, team, json } => {
+            let input = super::require_file_arg(&source, &url)?;
+            list(&input, team, json).await
+        }
     }
 }
 

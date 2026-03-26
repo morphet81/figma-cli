@@ -8,37 +8,56 @@ use crate::utils::format_table;
 pub enum CommentsCommands {
     /// List all comments on a file
     List {
-        /// File key or Figma URL
-        file: String,
-        /// Output as JSON
+        /// File key (or quoted Figma URL)
+        file: Option<String>,
+        /// Figma URL (avoids shell quoting issues)
+        #[arg(long)]
+        url: Option<String>,
         #[arg(long)]
         json: bool,
     },
     /// Add a comment to a file
     Add {
-        /// File key or Figma URL
-        file: String,
+        /// File key (or quoted Figma URL)
+        file: Option<String>,
+        /// Figma URL (avoids shell quoting issues)
+        #[arg(long)]
+        url: Option<String>,
         /// Comment message
         #[arg(short, long)]
         message: String,
     },
     /// Delete a comment
     Delete {
-        /// File key or Figma URL
-        file: String,
+        /// File key (or quoted Figma URL)
+        file: Option<String>,
+        /// Figma URL (avoids shell quoting issues)
+        #[arg(long)]
+        url: Option<String>,
         /// Comment ID to delete
+        #[arg(long)]
         comment_id: String,
     },
 }
 
 pub async fn run(cmd: CommentsCommands) -> Result<(), Box<dyn std::error::Error>> {
     match cmd {
-        CommentsCommands::List { file, json } => list(&file, json).await,
-        CommentsCommands::Add { file, message } => add(&file, &message).await,
+        CommentsCommands::List { file, url, json } => {
+            let input = super::require_file_arg(&file, &url)?;
+            list(&input, json).await
+        }
+        CommentsCommands::Add { file, url, message } => {
+            let input = super::require_file_arg(&file, &url)?;
+            add(&input, &message).await
+        }
         CommentsCommands::Delete {
             file,
+            url,
             comment_id,
-        } => delete(&file, &comment_id).await,
+        } => {
+            let input = super::require_file_arg(&file, &url)?;
+            delete(&input, &comment_id).await
+        }
     }
 }
 

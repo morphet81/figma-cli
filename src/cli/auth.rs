@@ -32,8 +32,28 @@ pub async fn run(cmd: AuthCommands) -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-async fn login(oauth: bool, _pat: bool) -> Result<(), Box<dyn std::error::Error>> {
-    if oauth {
+async fn login(_oauth: bool, pat: bool) -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::var("FIGMA_ACCESS_TOKEN").is_ok() {
+        println!("{}", "Already authenticated via FIGMA_ACCESS_TOKEN env var.".green());
+        println!("{}", "Unset it first if you want to use a different auth method.".dimmed());
+        return Ok(());
+    }
+
+    if pat {
+        let token = prompt_for_token()?;
+        if validate_token(&token).await? {
+            let tokens = AuthTokens {
+                access_token: token,
+                refresh_token: None,
+                expires_at: None,
+                token_type: TokenType::Pat,
+            };
+            save_tokens(&tokens)?;
+            println!("{}", "Successfully authenticated with PAT!".green());
+        } else {
+            println!("{}", "Invalid token. Authentication failed.".red());
+        }
+    } else {
         let client_id: String = Input::new()
             .with_prompt("Client ID")
             .interact_text()?;
@@ -63,20 +83,6 @@ async fn login(oauth: bool, _pat: bool) -> Result<(), Box<dyn std::error::Error>
         let tokens = start_oauth_flow(&config).await?;
         save_tokens(&tokens)?;
         println!("{}", "Successfully authenticated via OAuth!".green());
-    } else {
-        let token = prompt_for_token()?;
-        if validate_token(&token).await? {
-            let tokens = AuthTokens {
-                access_token: token,
-                refresh_token: None,
-                expires_at: None,
-                token_type: TokenType::Pat,
-            };
-            save_tokens(&tokens)?;
-            println!("{}", "Successfully authenticated with PAT!".green());
-        } else {
-            println!("{}", "Invalid token. Authentication failed.".red());
-        }
     }
     Ok(())
 }
@@ -91,7 +97,9 @@ fn status() -> Result<(), Box<dyn std::error::Error>> {
     let status = get_auth_status();
     if status.authenticated {
         println!("{} {}", "Status:".bold(), "Authenticated".green());
-        if let Some(token_type) = &status.token_type {
+        if status.from_env {
+            println!("{} {}", "Source:".bold(), "FIGMA_ACCESS_TOKEN env var");
+        } else if let Some(token_type) = &status.token_type {
             let label = match token_type {
                 TokenType::Oauth => "OAuth",
                 TokenType::Pat => "Personal Access Token",
@@ -112,7 +120,7 @@ fn status() -> Result<(), Box<dyn std::error::Error>> {
         );
         println!(
             "{}",
-            "Run `fcli auth login` to authenticate.".dimmed()
+            "Set FIGMA_ACCESS_TOKEN or run `fcli auth login` to authenticate.".dimmed()
         );
     }
     Ok(())

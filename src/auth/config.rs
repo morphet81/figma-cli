@@ -22,6 +22,7 @@ pub struct AuthStatus {
     pub authenticated: bool,
     pub token_type: Option<TokenType>,
     pub expires_at: Option<i64>,
+    pub from_env: bool,
 }
 
 fn auth_file_path() -> Option<PathBuf> {
@@ -53,16 +54,26 @@ pub fn clear_tokens() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn get_auth_status() -> AuthStatus {
+    if std::env::var("FIGMA_ACCESS_TOKEN").is_ok() {
+        return AuthStatus {
+            authenticated: true,
+            token_type: Some(TokenType::Pat),
+            expires_at: None,
+            from_env: true,
+        };
+    }
     match load_tokens() {
         Some(tokens) => AuthStatus {
             authenticated: true,
             token_type: Some(tokens.token_type),
             expires_at: tokens.expires_at,
+            from_env: false,
         },
         None => AuthStatus {
             authenticated: false,
             token_type: None,
             expires_at: None,
+            from_env: false,
         },
     }
 }

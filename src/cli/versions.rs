@@ -8,9 +8,11 @@ use crate::utils::format_table;
 pub enum VersionsCommands {
     /// List file version history
     List {
-        /// File key or Figma URL
-        file: String,
-        /// Output as JSON
+        /// File key (or quoted Figma URL)
+        file: Option<String>,
+        /// Figma URL (avoids shell quoting issues)
+        #[arg(long)]
+        url: Option<String>,
         #[arg(long)]
         json: bool,
     },
@@ -18,7 +20,10 @@ pub enum VersionsCommands {
 
 pub async fn run(cmd: VersionsCommands) -> Result<(), Box<dyn std::error::Error>> {
     match cmd {
-        VersionsCommands::List { file, json } => list(&file, json).await,
+        VersionsCommands::List { file, url, json } => {
+            let input = super::require_file_arg(&file, &url)?;
+            list(&input, json).await
+        }
     }
 }
 
