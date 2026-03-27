@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Package release archive
+        shell: bash
+        env:
+          VERSION_TAG: ${{ github.ref_name }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          NAME="fcli-${VERSION_TAG}-${TARGET}"
+          mkdir "${NAME}"
+          mkdir -p upload
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            cp "target/release/fcli.exe" "${NAME}/fcli.exe"
+            powershell -NoProfile -Command "Compress-Archive -LiteralPath \"${NAME}\" -DestinationPath \"${NAME}.zip\" -Force"
+            hash=$(openssl dgst -sha256 "${NAME}.zip" | awk '{print $NF}' | tr -d '\r')
+            printf '%s  %s\n' "${hash}" "${NAME}.zip" > "${NAME}.zip.sha256"
+            mv "${NAME}.zip" "${NAME}.zip.sha256" upload/
+          else
+            cp "target/release/fcli" "${NAME}/fcli"
+            tar czf "${NAME}.tar.gz" "${NAME}"
+            hash=$(openssl dgst -sha256 "${NAME}.tar.gz" | awk '{print $NF}' | tr -d '\r')
+            printf '%s  %s\n' "${hash}" "${NAME}.tar.gz" > "${NAME}.tar.gz.sha256"
+            mv "${NAME}.tar.gz" "${NAME}.tar.gz.sha256" upload/
+          fi
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: asset-${{ matrix.target }}
+          path: upload/
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          path: assets
+          pattern: asset-*
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: assets/*

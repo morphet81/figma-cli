@@ -27,6 +27,18 @@ Alternatively, install directly via Cargo:
 cargo install --path .
 ```
 
+### Releasing (maintainers)
+
+Install [cargo-edit](https://github.com/killercup/cargo-edit) once (`cargo install cargo-edit`), then from the repo root:
+
+```bash
+./scripts/bump-version.sh patch   # or minor | major
+```
+
+The script runs `cargo set-version` from the repo root (updating `Cargo.toml` and the root package in `Cargo.lock`), commits as `Release vX.Y.Z`, and creates an annotated `vX.Y.Z` tag. In an interactive terminal it asks whether to push the branch and tag to `origin` (`y` / `yes`, case-insensitive); non-interactive runs skip the prompt and print the `git push` lines. Use `./scripts/bump-version.sh --push patch` to push without prompting. The script does not build release binaries; pushing the tag starts the GitHub Actions release workflow.
+
+Pushing a `v*.*.*` tag runs the `release` workflow under `.github/workflows/` and publishes a GitHub release with prebuilt binaries and checksums.
+
 ## Authentication
 
 fcli supports three authentication methods, checked in this order:
