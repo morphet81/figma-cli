@@ -4,11 +4,24 @@ A command-line tool for interacting with the Figma REST API. Inspect files, expo
 
 ## Installation
 
-### Prerequisites
+### Homebrew (macOS / Linux)
 
-- [Rust toolchain](https://rustup.rs/) (1.70+)
+Prebuilt binaries are available through the third-party tap [morphet81/homebrew-tools](https://github.com/morphet81/homebrew-tools) (formula **`figma-cli`**, command **`fcli`**; no Rust toolchain required). See that repository for supported platforms, upgrades, and other formulas.
+
+```bash
+brew tap morphet81/homebrew-tools
+brew install figma-cli
+```
+
+Or install in one step without tapping first:
+
+```bash
+brew install morphet81/homebrew-tools/figma-cli
+```
 
 ### Install from source
+
+Prerequisites: [Rust](https://rustup.rs/) (1.70+).
 
 ```bash
 git clone <repo-url> && cd figma-cli
